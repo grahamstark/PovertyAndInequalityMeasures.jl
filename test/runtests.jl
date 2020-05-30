@@ -100,15 +100,15 @@ end
 
 
 
-    country_a_pov = makepoverty( country_a, line, growth )
+    country_a_pov = make_poverty( country_a, line, growth )
     print("country A " );println( country_a_pov )
-    country_a_2_pov = makepoverty( country_a_2, line,growth )
-    country_b_pov = makepoverty( country_b, line, growth )
-    country_c_pov = makepoverty( country_c, line, growth )
+    country_a_2_pov = make_poverty( country_a_2, line,growth )
+    country_b_pov = make_poverty( country_b, line, growth )
+    country_c_pov = make_poverty( country_c, line, growth )
     print("country C " );println( country_c_pov )
-    country_d_pov = makepoverty( country_d, line, growth )
+    country_d_pov = make_poverty( country_d, line, growth )
     print("country D " );println( country_d_pov )
-    country_e_pov = makepoverty( country_e, line, growth )
+    country_e_pov = make_poverty( country_e, line, growth )
     print("country E " );println( country_e_pov )
 
     @test comparedics( country_a_pov, country_a_2_pov )
@@ -157,11 +157,11 @@ end # poverty testset
     cx = copy(c1[7:10,:])
     cx[:,1] .= 100_000
     c64k = vcat( c64k, cx )
-    iq1 = makeinequality( c1 )
-    iq2 = makeinequality( c2 )
-    iq3 = makeinequality( c3 )
-    iq4 = makeinequality( c4 )
-    iq64k = makeinequality( c64k )
+    iq1 = make_inequality( c1 )
+    iq2 = make_inequality( c2 )
+    iq3 = make_inequality( c3 )
+    iq4 = make_inequality( c4 )
+    iq64k = make_inequality( c64k )
     # weighting and multiplying should make no difference
     @test comparedics( iq1, iq2, [:total_income, :total_population, :deciles] )
     println( "iq1");println( iq1 )
