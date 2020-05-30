@@ -9,12 +9,11 @@ This generates various measures poverty and inequality from a sample dataset.
 
 The measures are mostly taken from chs. 4-6 of the World Banks' [Handbook on Poverty and Inequality](biblio.md).
 
-See the test casesfor worked examples.
+See the [test case for worked examples](../test/poverty_inequality_tests.jl)
 
 ## Poverty:
 
-These routines can use both 2d arrays and dataframes as inputs For the arrays, supply with integers
-giving the columns holding weights and incomes; for the frames, the names of the columns (as symbols).
+These routines can use both 2d arrays and DataFrames as inputs For the arrays, supply with integers giving the columns holding weights and incomes; for the frames, the names of the columns (as symbols).
 
 ```julia
 
@@ -102,6 +101,11 @@ Modules = [PovertyAndInequalityMeasures]
 [:constant, :type, :function]
 ```
 
+## TODO
+
+* better decomposable indices;
+* having seperate dataframe/array versions seems complicated.
+
 ## Bibliography
 
 Cobham Alex, and Sumner Andy. “Is Inequality All about the Tails?: The Palma Measure of Income Inequality.” Significance 11, no. 1 (February 19, 2014): 10–13. [https://doi.org/10.1111/j.1740-9713.2014.00718.x](https://doi.org/10.1111/j.1740-9713.2014.00718.x).
@@ -110,4 +114,4 @@ Haughton, Jonathan, and Shahidur R. Khandker. ‘Handbook on Poverty and Inequal
 
 Preston, Ian. ‘Inequality and Income Gaps’. IFS Working Paper. Institute for Fiscal Studies, 5 December 2006. [https://econpapers.repec.org/paper/ifsifsewp/06_2f25.htm](https://econpapers.repec.org/paper/ifsifsewp/06_2f25.htm).
 
-Reed, Howard, and Graham Stark. ‘Tackling Child Poverty Delivery Plan - Forecasting Child Poverty in Scotland’. Scottish Government, 9 March 2018. [http://www.gov.scot/Publications/2018/03/2911/0](http://www.gov.scot/Publications/2018/03/2911/0).
+Reed, Howard, and Graham Stark. ‘Tackling Child Poverty Delivery Plan - Forecasting Child Poverty in Scotland’. Scottish Government, 9 March 2018. [http://www.gov.scot/Publications/2018/03/2911/0](http://www.gov.scot/Publications/2018/03/2911/0)``.
