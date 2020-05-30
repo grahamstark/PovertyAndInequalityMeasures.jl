@@ -1,6 +1,4 @@
-# PovertyAndInequalityMeasures
-
-# Poverty and Inequality
+# Poverty And Inequality Measures
 
 This generates various measures poverty and inequality from a sample dataset.
 
