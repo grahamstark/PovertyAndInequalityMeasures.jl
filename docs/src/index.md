@@ -9,7 +9,7 @@ This generates various measures poverty and inequality from a sample dataset.
 
 The measures are mostly taken from chs. 4-6 of the World Banks' [Handbook on Poverty and Inequality](biblio.md).
 
-See the [test case for worked examples](../test/poverty_inequality_tests.jl)
+See the test casesfor worked examples.
 
 ## Poverty:
 
