@@ -149,6 +149,22 @@ Arguments:
    corresponds to headcount and FGT(1) to gap; count and gap are computed directly anyway
    but it's worth checking one against the other.
 * `growth` is (e.g.) 0.01 for 1% per period, and is used for 'time to exit' measure.
+
+
+Output is  dictionary with an entry for each measure.
+
+The measures are:
+
+* `headcount`;
+* `gap`;
+* `Foster Greer Thorndyke`, for each of the values in `foster_greer_thorndyke_alphas`;
+* `Watts`;
+* `time to exit`, for the supplied growth rate;
+* `Shorrocks`;
+* `Sen`.
+
+See World Bank, ch. 4.
+
 """
 function make_poverty(
     rawdata                       :: Array{<:Real, 2},
@@ -319,6 +335,28 @@ This is mainly taken from chs 5 and 6 of the World Bank book.
 3. `generalised_entropy_alphas`
 4. `weightpos` - column with weights
 5. `incomepos` - column with incomes
+
+
+Returned is a Dict of inequality measures with:
+
+* `Gini`;
+* `Atkinson`, for each value in `atkinson_es`;
+* `Theil`;
+* `generalised_entropy`;
+* `Hoover`;
+* `Theil`;
+* `Palma`.
+
+See WB chs 5 an 6, and Cobham and Sumner on the Palma.
+
+Also in the dict are:
+
+* `total_income`
+* `total_population`
+* `average_income`
+* `deciles`.
+
+
 """
 function make_inequality(
     rawdata                    :: Array{<:Real, 2 },
@@ -441,6 +479,7 @@ This is mainly taken from chs 5 and 6 of the World Bank book.
 3. `generalised_entropy_alphas`
 4. `weightpos` - column with weights
 5. `incomepos` - column with incomes
+
 """
 function make_inequalityinternal(
     ;
