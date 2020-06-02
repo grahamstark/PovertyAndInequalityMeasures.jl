@@ -46,6 +46,18 @@ corresponds to the headcount measure and FGT(1) to poverty gap; count and gap ar
 
 Output is  dictionary with an entry for each measure.
 
+The measures are:
+
+* `headcount`;
+* `gap`;
+* `Foster Greer Thorndyke`, for each of the values in `foster_greer_thorndyke_alphas`;
+* `Watts`;
+* `time to exit`, for the supplied growth rate;
+* `Shorrocks`;
+* `Sen`.
+
+See World Bank, ch. 4.
+
 ## Inequality
 
 Usage is similar to `makepoverty` above. See chs 5 and 6 of the World Bank book, and the [test case](../test/poverty_inequality_tests.jl) for more detail.
@@ -77,7 +89,24 @@ Notes:
 * `weightpos` - column with weights
 * `incomepos` - column with incomes
 
-Return is a also a Dict of inequality measures.
+Return is a also a Dict of inequality measures:
+
+* `Gini`;
+* `Atkinson`, for each value in `atkinson_es`;
+* `Theil`;
+* `generalised_entropy`;
+* `Hoover`;
+* `Theil`;
+* `Palma`.
+
+See WB chs 5 an 6, and Cobham and Sumner on the Palma.
+
+Also returned are:
+
+* `total_income`
+* `total_population`
+* `average_income`
+* `deciles`.
 
 There's also a method:
 
