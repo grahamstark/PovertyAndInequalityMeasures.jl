@@ -43,14 +43,13 @@ out=DataFrame(
 
 r = 0
 for y in start_year:end_year
-    # filenames weirdness .. 
     global r
     r += 1
+    # filenames weirdness .. 
     post = (y in 2002:2016) ? "_g4" : ""
     pre = y >= 2017 ? "h" : "hbai"
     fn = "$(datadir)$(pre)"*"$y"[3:end]*"$(y+1)"[3:end]*"$post.tab"
-    print(fn)
-    
+    println(fn)
     # load each year & jam varnames to lower case
     hbai =  CSV.File(fn)|>DataFrame
     lcnames = Symbol.(lowercase.(string.(names(hbai))))
@@ -62,9 +61,6 @@ for y in start_year:end_year
     scot_wages = scot[(scot.egrernhh.>0),:]
     # make gb subset, since nireland included from 2002 on, but not before  
     gb = hbai[(hbai.gvtregn .!== 13),:] 
-    print(size(hbai))
-    print( size(scot))
-    println( size(gb))
     #make scottish ineq with: bhc and ahc incomes; oecd equiv; individual weights
     sco_ineq_bhc = make_inequality( scot,:gs_newpp,:s_oe_bhc )
     sco_ineq_ahc = make_inequality( scot,:gs_newpp,:s_oe_ahc )
@@ -93,12 +89,38 @@ for y in start_year:end_year
     out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc[:atkinson][4]
     out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc[:atkinson][8]    
     out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc[:atkinson][8]
-
-
-    println("$(y) SCO popn=$sco_popn bhc=$(sco_ineq_bhc[:gini]) ahc=$(sco_ineq_ahc[:gini]) wage=$(sco_ineq_wage[:gini])")
-    println("$(y) GB  popn=$gb_popn bhc=$(gb_ineq_bhc[:gini]) ahc=$(gb_ineq_ahc[:gini])")
-    
 end
 
-plot(out[:year],[out[:sco_gini_ahc],out[:sco_gini_bhc]])
+gini = plot( 
+    out[:year],
+    [out[:sco_gini_ahc],out[:sco_gini_bhc]],
+    title="Gini Coefficient",
+    ylims=(0,1),
+    labels=["AHC" "BHC"])
+
+palma = plot( 
+    out[:year],
+    [out[:sco_palma_ahc],out[:sco_palma_bhc]],
+    title="Palma Index",
+    ylims=(1,2),
+    labels=["AHC" "BHC"])
+
+wage  = plot( 
+    out[:year],
+    [out[:sco_gini_wage]],
+    title="Wage Inequality (Gini)",
+    ylims=(0,1),
+    labels="Wages")
+
+atkin = plot( 
+    out[:year],
+    [out[:sco_atkinson_ahc_1], out[:sco_atkinson_bhc_1], 
+     out[:sco_atkinson_ahc_2], out[:sco_atkinson_bhc_2] ],
+    title="Atkinson Indexes a=1,2",
+    labels=["AHC a=1" "BHC a=1" "AHC a=2" "BHC a=2"])
+
+grid = plot( gini, palma, wage, atkin, layout = (2, 2), 
+    legend = :outerbottomright,
+    legendfontsize=6,
+    titlefontsize=8 )
 # .. and so on
