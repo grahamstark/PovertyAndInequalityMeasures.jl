@@ -19,9 +19,33 @@ using Plots, CSV
 # 
 # .. change this, obvs:
 datadir="/mnt/data/hbai/tab/"
-ginis = []
-for y in 1994:2018
+start_year = 1994
+end_year = 2018
+n = end_year - start_year + 1
+out=DataFrame( 
+    year=zeros(Int,n), 
+    scot_pop=zeros(n),
+    sco_gini_bhc=zeros(n),
+    sco_gini_ahc=zeros(n),
+    sco_gini_wage=zeros(n),
+    sco_palma_bhc=zeros(n),
+    sco_palma_ahc=zeros(n),
+    gb_pop=zeros(n),
+    gb_gini_bhc=zeros(n), 
+    gb_gini_ahc=zeros(n), 
+    gb_palma_bhc=zeros(n),
+    gb_palma_ahc=zeros(n),
+    sco_atkinson_ahc_1=zeros(n),    
+    sco_atkinson_bhc_1=zeros(n),
+    sco_atkinson_ahc_2=zeros(n),    
+    sco_atkinson_bhc_2=zeros(n)
+    )
+
+r = 0
+for y in start_year:end_year
     # filenames weirdness .. 
+    global r
+    r += 1
     post = (y in 2002:2016) ? "_g4" : ""
     pre = y >= 2017 ? "h" : "hbai"
     fn = "$(datadir)$(pre)"*"$y"[3:end]*"$(y+1)"[3:end]*"$post.tab"
@@ -52,12 +76,29 @@ for y in 1994:2018
     gb_ineq_ahc = make_inequality( gb,:gs_newpp,:s_oe_ahc )
     gb_popn = sum( gb.gs_newpp )
     @assert gb_popn ≈ gb_ineq_ahc[:total_population]
-    push!(ginis,[y,sco_popn,sco_ineq_bhc[:gini],sco_ineq_ahc[:gini],gb_popn,gb_ineq_bhc[:gini],gb_ineq_ahc[:gini]])
+    
+    out[r, :year] = y
+    out[r,:scot_pop] = sco_popn
+    out[r, :sco_gini_bhc] = sco_ineq_bhc[:gini]
+    out[r, :sco_gini_ahc] = sco_ineq_ahc[:gini]
+    out[r, :sco_gini_wage] = sco_ineq_wage[:gini]
+    out[r, :gb_pop] = gb_popn
+    out[r, :gb_gini_bhc] = gb_ineq_bhc[:gini]
+    out[r, :gb_gini_ahc] =  gb_ineq_ahc[:gini]
+    out[r, :sco_palma_bhc] = sco_ineq_bhc[:palma]
+    out[r, :sco_palma_ahc] = sco_ineq_ahc[:palma]
+    out[r, :gb_palma_bhc] = gb_ineq_bhc[:palma]
+    out[r, :gb_palma_ahc] = sco_ineq_ahc[:palma]
+    out[r, :sco_atkinson_ahc_1] = sco_ineq_ahc[:atkinson][4]
+    out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc[:atkinson][4]
+    out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc[:atkinson][8]    
+    out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc[:atkinson][8]
+
+
     println("$(y) SCO popn=$sco_popn bhc=$(sco_ineq_bhc[:gini]) ahc=$(sco_ineq_ahc[:gini]) wage=$(sco_ineq_wage[:gini])")
     println("$(y) GB  popn=$gb_popn bhc=$(gb_ineq_bhc[:gini]) ahc=$(gb_ineq_ahc[:gini])")
     
 end
 
-for i in size(ginis)
-    println(ginis[i,:])
-end
+plot(out[:year],[out[:sco_gini_ahc],out[:sco_gini_bhc]])
+# .. and so on
