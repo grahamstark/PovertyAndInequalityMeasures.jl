@@ -3,6 +3,7 @@ module PovertyAndInequalityMeasures
 using IterableTables
 using IteratorInterfaceExtensions
 using TableTraits
+using DataFrames
 
 # inequality stuff
 export OutputDict, OutputDictArray
@@ -22,8 +23,8 @@ const DEFAULT_ENTROPIES = [ 1.25, 1.50, 1.75, 2.0, 2.25, 2.5 ];
 const OutputDict = Dict{ Symbol, Any }
 const OutputDictArray = Array{ OutputDict, 1 }
 
-function sortAndAccumulate( aug :: Array{<:Real,2}, sortdata :: Bool, nrows :: Integer ) :: Array{<:Real,2}
-    if sortdata
+function sortAndAccumulate( aug :: Array{<:Real,2}, sort_data :: Bool, nrows :: Integer ) :: Array{<:Real,2}
+    if sort_data
         aug = sortslices( aug, alg=QuickSort, dims=1,lt=((x,y)->isless(x[INCOME],y[INCOME])))
     end
     cumulative_weight :: Float64 = 0.0
@@ -45,27 +46,29 @@ with cumulative income and population added
 function make_augmented(
     data,
     weightcol :: Symbol,
-    incomecol :: Symbol,
-    sortdata  :: Bool = true,
-    deletenegatives :: Bool = true ) :: Array{Float64,2}
+    incomecol :: Symbol
+    ;
+    sort_data  :: Bool = true,
+    delete_negatives :: Bool = false ) :: Array{Float64,2}
     @assert TableTraits.isiterabletable( data ) "data needs to implement IterableTables"
-    iter = IteratorInterfaceExtensions.getiterator(data)
-    nrows = length(iter)
+    data = DataFrame(data) # this just makes iteration&handling missings easier
+    # iter = IteratorInterfaceExtensions.getiterator(data)
+    nrows = size(data)[1]
     aug = zeros( nrows, 5 )
     r = 0
-    for row in iter
+    for row in eachrow(data)
         if ( ismissing( row[weightcol])) || ( ismissing( row[incomecol])) ||
-            ( deletenegatives && row[incomecol] < 0.0 )
+            ( delete_negatives && row[incomecol] < 0.0 )
             ;
         else
             r += 1
-            aug[r,WEIGHT] = get(row[weightcol]) ## this is the datavalue thing; see:
-            aug[r,INCOME] = get(row[incomecol])
+            aug[r,WEIGHT] = Float64(row[weightcol]) 
+            aug[r,INCOME] = Float64(row[incomecol])
             aug[r,WEIGHTED_INCOME] = aug[r,WEIGHT]*aug[r,INCOME]
         end # not missing or negative
     end
     aug = aug[1:r,:]
-    aug = sortAndAccumulate( aug, sortdata, r )
+    aug = sortAndAccumulate( aug, sort_data, r )
     return aug
 end
 
@@ -76,15 +79,16 @@ with cumulative income and population added
 function make_augmented(
     data            :: Array{<:Real,2},
     weightpos       :: Integer = 1,
-    incomepos       :: Integer = 2,
-    sortdata        :: Bool = true,
-    deletenegatives :: Bool = true ) :: Array{Float64,2}
+    incomepos       :: Integer = 2;
+
+    sort_data        :: Bool = true,
+    delete_negatives :: Bool = false ) :: Array{Float64,2}
 
     nrows = size( data )[1]
     aug = zeros( nrows, 5 )
     r = 0
     for row in 1:nrows
-        if( deletenegatives && data[row,incomepos] < 0.0 )
+        if( delete_negatives && data[row,incomepos] < 0.0 )
             ;
         else
             r += 1
@@ -93,7 +97,7 @@ function make_augmented(
             aug[r,WEIGHTED_INCOME] = data[row,incomepos]*data[row,weightpos]
         end # not neg or negs accepted
     end # row loop
-    aug = sortAndAccumulate( aug, sortdata, r )
+    aug = sortAndAccumulate( aug, sort_data, r )
     return aug[1:r,:]
 end
 
@@ -273,7 +277,7 @@ function make_povertyinternal(
         gdata[gpos,INCOME] = gap;
         gdata[gpos,WEIGHT] = data[row,WEIGHT]
     end
-    gdata = make_augmented( gdata, 1, 2, false )
+    gdata = make_augmented( gdata, 1, 2, sort_data=false )
     pv[:poverty_gap_gini] = make_gini( gdata )
 
     pv[:sen] = pv[:headcount]*pv[:gini_amongst_poor]+pv[:gap]*(1.0-pv[:gini_amongst_poor])
@@ -364,7 +368,7 @@ function make_inequality(
     incomepos                  :: Integer = 2,
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
     generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
-    data = make_augmented( rawdata, weightpos, incomepos )
+    data = make_augmented( rawdata, weightpos, incomepos, true, false )
     return make_inequalityinternal(
         data = data,
         atkinson_es = atkinson_es,
@@ -383,7 +387,7 @@ function make_inequality(
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
     generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
-    data = make_augmented( rawdata, weightcol, incomecol )
+    data = make_augmented( rawdata, weightcol, incomecol, delete_negatives=false )
     return make_inequalityinternal(
         data = data,
         atkinson_es = atkinson_es,
@@ -405,7 +409,7 @@ function binify(
     numbins   :: Integer,
     weightpos :: Integer = 1,
     incomepos :: Integer = 2 ) :: AbstractArray{<:Real, 2}
-    data = make_augmented( rawdata, weightpos, incomepos, true, true )
+    data = make_augmented( rawdata, weightpos, incomepos, delete_negatives=true )
     return binifyinternal( data, numbins )
 end
 
@@ -418,7 +422,7 @@ function binify(
     weightcol :: Symbol,
     incomecol :: Symbol ) :: AbstractArray{<:Real, 2}
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
-    data = make_augmented( rawdata, weightcol, incomecol, true, true )
+    data = make_augmented( rawdata, weightcol, incomecol )
     return binifyinternal( data, numbins )
 end
 

@@ -1,8 +1,6 @@
 using PovertyAndInequalityMeasures
 using Test
 
-using Test
-
 #
 # These tests mostly try to replicate examples from
 # World Bank 'Handbook on poverty and inequality'
