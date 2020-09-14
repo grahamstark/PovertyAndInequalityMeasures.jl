@@ -368,7 +368,7 @@ function make_inequality(
     incomepos                  :: Integer = 2,
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
     generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
-    data = make_augmented( rawdata, weightpos, incomepos, true, false )
+    data = make_augmented( rawdata, weightpos, incomepos )
     return make_inequalityinternal(
         data = data,
         atkinson_es = atkinson_es,
@@ -387,7 +387,7 @@ function make_inequality(
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
     generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
-    data = make_augmented( rawdata, weightcol, incomecol, delete_negatives=false )
+    data = make_augmented( rawdata, weightcol, incomecol )
     return make_inequalityinternal(
         data = data,
         atkinson_es = atkinson_es,
@@ -409,7 +409,7 @@ function binify(
     numbins   :: Integer,
     weightpos :: Integer = 1,
     incomepos :: Integer = 2 ) :: AbstractArray{<:Real, 2}
-    data = make_augmented( rawdata, weightpos, incomepos, delete_negatives=true )
+    data = make_augmented( rawdata, weightpos, incomepos )
     return binifyinternal( data, numbins )
 end
 
