@@ -110,7 +110,7 @@ palma = plot(
     out.year,
     [out.sco_palma_ahc,out.sco_palma_bhc],
     title="Scotland: Palma",
-    ylims=(1,2),
+    ylims=(0,2),
     labels=["AHC" "BHC"])
 
 wage  = plot( 
@@ -130,6 +130,7 @@ atkin = plot(
 sc_gb_gini = plot( 
     out.year,
     [out.sco_gini_ahc, out.sco_gini_bhc, out.gb_gini_ahc, out.gb_gini_bhc],
+    ylims=(0,1),
     title="Scotland vs GB (Gini)",
     labels=[ "Sco:AHC" "Sco:BHC" "GB:AHC" "GB:BHC"])
     
