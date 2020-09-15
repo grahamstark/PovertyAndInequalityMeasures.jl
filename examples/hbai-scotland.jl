@@ -103,7 +103,7 @@ gini = plot(
     out.year,
     [out.sco_gini_ahc,out.sco_gini_bhc],
     title="Scotland: Gini",
-    ylims=(0,1),
+    ylims=(0.2,0.5),
     labels=["AHC" "BHC"])
 
 palma = plot( 
@@ -117,7 +117,7 @@ wage  = plot(
     out.year,
     [out.sco_gini_wage],
     title="Scotland: Wage Gini",
-    ylims=(0,1),
+    ylims=(0.2,0.5),
     labels="Wages")
 
 atkin = plot( 
@@ -130,7 +130,7 @@ atkin = plot(
 sc_gb_gini = plot( 
     out.year,
     [out.sco_gini_ahc, out.sco_gini_bhc, out.gb_gini_ahc, out.gb_gini_bhc],
-    ylims=(0,1),
+    ylims=(0.2,0.5),
     title="Scotland vs GB (Gini)",
     labels=[ "Sco:AHC" "Sco:BHC" "GB:AHC" "GB:BHC"])
     
@@ -167,8 +167,8 @@ sco_palma_r6 = GLM.lm( @formula( log(sco_palma_bhc) ~ year ), out )
 sco_palma_r7 = GLM.lm( @formula( log(sco_palma_ahc) ~ year+snp ), out )
 sco_palma_r8 = GLM.lm( @formula( log(sco_palma_bhc) ~ year+snp ), out )
 
-regtable( sco_gini_r1, sco_gini_r2, sco_gini_r3, sco_gini_r4 )
+regtable( sco_gini_r1, sco_gini_r2, sco_gini_r3, sco_gini_r4; renderSettings=latexOutput("/home/graham_s/tmp/gini.tex" ))
 
 # regtable( sco_gini_r5, sco_gini_r6, sco_gini_r7, sco_gini_r8 )
-regtable( sco_palma_r1, sco_palma_r2, sco_palma_r3, sco_palma_r4 )
+regtable( sco_palma_r1, sco_palma_r2, sco_palma_r3, sco_palma_r4; renderSettings=latexOutput( "/home/graham_s/tmp/palma.tex" ))
 #regtable( sco_palma_r5, sco_palma_r6, sco_palma_r7, sco_palma_r8 )
