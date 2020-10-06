@@ -168,7 +168,9 @@ sco_palma_r7 = GLM.lm( @formula( log(sco_palma_ahc) ~ year+snp ), out )
 sco_palma_r8 = GLM.lm( @formula( log(sco_palma_bhc) ~ year+snp ), out )
 
 regtable( sco_gini_r1, sco_gini_r2, sco_gini_r3, sco_gini_r4; renderSettings=latexOutput("/home/graham_s/tmp/gini.tex" ))
+regtable( sco_gini_r1, sco_gini_r2, sco_gini_r3, sco_gini_r4; renderSettings=asciiOutput("/home/graham_s/tmp/gini.txt" ))
 
 # regtable( sco_gini_r5, sco_gini_r6, sco_gini_r7, sco_gini_r8 )
 regtable( sco_palma_r1, sco_palma_r2, sco_palma_r3, sco_palma_r4; renderSettings=latexOutput( "/home/graham_s/tmp/palma.tex" ))
-#regtable( sco_palma_r5, sco_palma_r6, sco_palma_r7, sco_palma_r8 )
+regtable( sco_palma_r1, sco_palma_r2, sco_palma_r3, sco_palma_r4; renderSettings=asciiOutput("/home/graham_s/tmp/palma.txt" ))
+regtable( sco_palma_r5, sco_palma_r6, sco_palma_r7, sco_palma_r8 )
