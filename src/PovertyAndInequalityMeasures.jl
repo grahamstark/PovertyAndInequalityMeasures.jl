@@ -5,12 +5,11 @@ using IteratorInterfaceExtensions
 using TableTraits
 using DataFrames
 
-# inequality stuff
-export OutputDict, OutputDictArray
+
 export DEFAULT_ATKINSON_ES, DEFAULT_ENTROPIES, DEFAULT_FGT_ALPHAS
 export make_gini, make_poverty, make_inequality, binify, add_decomposed_theil
+export PovertyMeasures, InequalityMeasures, ineqs_equal, povs_equal
 
-# Write your package code here.
 const WEIGHT          = 1
 const INCOME          = 2
 const WEIGHTED_INCOME = 3
@@ -20,15 +19,78 @@ const DEFAULT_FGT_ALPHAS = [ 0.0, 0.50, 1.0, 1.50, 2.0, 2.5 ];
 const DEFAULT_ATKINSON_ES = [ 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25 ];
 const DEFAULT_ENTROPIES = [ 1.25, 1.50, 1.75, 2.0, 2.25, 2.5 ];
 
-const OutputDict = Dict{ Symbol, Any }
-const OutputDictArray = Array{ OutputDict, 1 }
+mutable struct PovertyMeasures{T<:Real}
+    headcount :: T
+    gap :: T
+    watts :: T
+    sen :: T
+    shorrocks :: T
+    fgt_alphas :: Vector{T}
+    foster_greer_thorndyke :: Vector{T}
+    time_to_exit :: T
+    gini_amongst_poor :: T
+    poverty_gap_gini :: T
+end
+
+
+function povs_equal( p1 :: PovertyMeasures, p2 :: PovertyMeasures ) :: Bool
+    return (p1.headcount ≈ p2.headcount) &&
+        (p1.gap ≈ p2.gap) &&
+        (p1.watts ≈ p2.watts) &&
+        (p1.sen ≈ p2.sen) &&
+        (p1.shorrocks ≈ p2.shorrocks) &&
+        (p1.fgt_alphas ≈ p2.fgt_alphas) &&
+        (p1.foster_greer_thorndyke ≈ p2.foster_greer_thorndyke) &&
+        (p1.time_to_exit ≈ p2.time_to_exit) &&
+        (p1.gini_amongst_poor ≈ p2.gini_amongst_poor) &&
+        (p1.poverty_gap_gini ≈ p2.poverty_gap_gini)
+end
+
+
+mutable struct InequalityMeasures{T<:Real}
+    atkinson_es :: Vector{T}
+    atkinson :: Vector{T}
+    generalised_entropy_alphas :: Vector{T}
+    generalised_entropy :: Vector{T}
+    hoover :: T
+    theil :: Vector{T}
+    gini :: T
+    palma :: T
+    median :: T
+    total_income :: T
+    average_income :: T
+    total_population :: T
+    deciles :: Matrix{T}
+    negative_or_zero_income_count :: Int    
+end
+
+function ineqs_equal( i1 :: InequalityMeasures, i2 :: InequalityMeasures; include_populations :: Bool = true ) :: Bool
+    eq = ( i1.atkinson_es ≈ i2.atkinson_es ) &&
+        ( i1.atkinson ≈ i2.atkinson ) &&
+        ( i1.generalised_entropy_alphas ≈ i2.generalised_entropy_alphas ) &&
+        ( i1.generalised_entropy ≈ i2.generalised_entropy ) &&
+        ( i1.hoover ≈ i2.hoover ) &&
+        ( i1.theil ≈ i2.theil ) &&
+        ( i1.gini ≈ i2.gini ) &&
+        ( i1.palma ≈ i2.palma ) &&
+        ( i1.median ≈ i2.median )
+    
+    if include_populations
+        eq2 = ( i1.total_income ≈ i2.total_income ) &&
+        ( i1.average_income ≈ i2.average_income ) &&
+        ( i1.total_population ≈ i2.total_population ) &&
+        ( i1.deciles ≈ i2.deciles )
+        eq = eq && eq2
+    end
+    return eq
+end
 
 function sortAndAccumulate( aug :: Array{<:Real,2}, sort_data :: Bool, nrows :: Integer ) :: Array{<:Real,2}
     if sort_data
         aug = sortslices( aug, alg=QuickSort, dims=1,lt=((x,y)->isless(x[INCOME],y[INCOME])))
     end
-    cumulative_weight :: Float64 = 0.0
-    cumulative_income :: Float64 = 0.0
+    cumulative_weight = 0.0
+    cumulative_income = 0.0
     for row in 1:nrows
             cumulative_weight += aug[row,WEIGHT]
             cumulative_income += aug[row,WEIGHTED_INCOME]
@@ -49,9 +111,10 @@ function make_augmented(
     incomecol :: Symbol
     ;
     sort_data  :: Bool = true,
-    delete_negatives :: Bool = false ) :: Array{Float64,2}
+    delete_negatives :: Bool = false ) :: Matrix
     @assert TableTraits.isiterabletable( data ) "data needs to implement IterableTables"
     data = DataFrame(data) # this just makes iteration&handling missings easier
+    T = elype( data )
     # iter = IteratorInterfaceExtensions.getiterator(data)
     nrows = size(data)[1]
     aug = zeros( nrows, 5 )
@@ -62,8 +125,8 @@ function make_augmented(
             ;
         else
             r += 1
-            aug[r,WEIGHT] = Float64(row[weightcol]) 
-            aug[r,INCOME] = Float64(row[incomecol])
+            aug[r,WEIGHT] = T(row[weightcol]) 
+            aug[r,INCOME] = T(row[incomecol])
             aug[r,WEIGHTED_INCOME] = aug[r,WEIGHT]*aug[r,INCOME]
         end # not missing or negative
     end
@@ -82,7 +145,7 @@ function make_augmented(
     incomepos       :: Integer = 2;
 
     sort_data        :: Bool = true,
-    delete_negatives :: Bool = false ) :: Array{Float64,2}
+    delete_negatives :: Bool = false ) :: Matrix
 
     nrows = size( data )[1]
     aug = zeros( nrows, 5 )
@@ -104,8 +167,9 @@ end
 """
 calculate a Gini coefficient on one of our sorted arrays
 """
-function make_gini( data :: Array{Float64, 2} ) :: Float64
-    lorenz :: Float64 = 0.0
+function make_gini( data :: Matrix ) :: Real
+    T = eltype( data )
+    lorenz = 0.0
 
     nrows = size( data )[1]
     if nrows == 0
@@ -123,10 +187,11 @@ generate a subset of one of our datasets with just the elements whose incomes
 are below the line. Probably possible in 1 line, once I get the hang of this
 a bit more.
 """
-function make_all_below_line( data :: Array{Float64, 2}, line :: Float64 ) :: Array{Float64, 2 }
+function make_all_below_line( data :: Matrix, line :: Real ) :: Matrix
     nrows = size( data )[1]
     ncols = size( data )[2]
-    outa = zeros( Float64, nrows, ncols ) # Array{Float64}( undef, 0, 5 )
+    T = eltype( data )
+    outa = zeros( T, nrows, ncols )
     @assert ncols == 5 "data should have 5 cols"
     nout = 0
     for row in 1:nrows
@@ -176,7 +241,7 @@ function make_poverty(
     growth                        :: Real,
     weightpos                     :: Integer = 1,
     incomepos                     :: Integer = 2,
-    foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS ) :: OutputDict
+    foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS ) :: PovertyMeasures
 
     data = make_augmented( rawdata, weightpos, incomepos )
     make_povertyinternal(
@@ -198,7 +263,7 @@ function make_poverty(
     weightcol                     :: Symbol,
     incomecol                     :: Symbol,
     foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS,
-     ) :: OutputDict
+     ) :: PovertyMeasures
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
     data = make_augmented( rawdata, weightcol, incomecol )
     make_povertyinternal(
@@ -214,52 +279,59 @@ Internal version, once we have our datatset
 """
 function make_povertyinternal(
     ;
-    data                          :: Array{Float64, 2},
+    data                          :: Matrix,
     line                          :: Real,
     growth                        :: Real = 0.0,
-    foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS,) :: OutputDict
-
-    pv = Dict{ Symbol, Any}()
+    foster_greer_thorndyke_alphas :: Vector = DEFAULT_FGT_ALPHAS ) :: PovertyMeasures
+   
+    nfgs = size( foster_greer_thorndyke_alphas )[1]
+    T = eltype( foster_greer_thorndyke_alphas )
+    z = zero(T)
+    pv = PovertyMeasures( 
+        z, 
+        z, 
+        z, 
+        z, 
+        z, 
+        foster_greer_thorndyke_alphas, 
+        zeros( nfgs ), 
+        z, 
+        z, 
+        z ) 
+    
     nrows = size( data )[1]
     ncols = size( data )[2]
     population = data[ nrows, POPN_ACCUM ]
     total_income = data[ nrows, INCOME_ACCUM ]
 
-    nfgs = size( foster_greer_thorndyke_alphas )[1]
     @assert ncols == 5 "data should have 5 cols"
-    pv[:fgt_alphas] = foster_greer_thorndyke_alphas
-    pv[:headcount] = 0.0
-    pv[:gap] = 0.0
-    pv[:watts] = 0.0
-    pv[:foster_greer_thorndyke] = zeros( Float64, nfgs )
-    pv[:time_to_exit] = 0.0
 
     belowline = make_all_below_line( data, line )
     nbrrows = size( belowline )[1]
 
-    pv[:gini_amongst_poor] = make_gini( belowline )
+    pv.gini_amongst_poor = make_gini( belowline )
     for row in 1:nbrrows
-        inc :: Float64= belowline[row,INCOME]
-        weight :: Float64 = belowline[row,WEIGHT]
-        gap :: Float64 = line - inc
+        inc :: T= belowline[row,INCOME]
+        weight :: T = belowline[row,WEIGHT]
+        gap :: T = line - inc
         @assert gap >= 0 "poverty gap must be postive"
-        pv[:headcount] += weight
-        pv[:gap] += weight*gap/line
+        pv.headcount  += weight
+        pv.gap  += weight*gap/line
         if belowline[row,INCOME ] > 0
-            pv[:watts] += weight*log(line/inc)
+            pv.watts  += weight*log(line/inc)
         end
         for p in 1:nfgs
             fg = foster_greer_thorndyke_alphas[p]
-            pv[:foster_greer_thorndyke][p] += weight*((gap/line)^fg)
+            pv.foster_greer_thorndyke[p] += weight*((gap/line)^fg)
         end
     end # main loop
-    pv[:watts] /= population
+    pv.watts /= population
     if growth > 0.0
-        pv[:time_to_exit] = pv[:watts]/growth
+        pv.time_to_exit = pv.watts/growth
     end
-    pv[:gap] /= population
-    pv[:headcount] /= population
-    pv[:foster_greer_thorndyke] ./= population
+    pv.gap /= population
+    pv.headcount /= population
+    pv.foster_greer_thorndyke ./= population
     #
     # Gini of poverty gaps; see: WB pp 74-5
     #
@@ -270,7 +342,7 @@ function make_povertyinternal(
     # (smallest income -> biggest gap)
     # we we can just create the dataset in reverse
     # and use that
-    gdata = zeros( Float64, nrows, 5 )
+    gdata = zeros( T, nrows, 5 )
     for row in 1:nrows
         gap = max( 0.0, line - data[row,INCOME] )
         gpos = nrows - row + 1
@@ -278,10 +350,10 @@ function make_povertyinternal(
         gdata[gpos,WEIGHT] = data[row,WEIGHT]
     end
     gdata = make_augmented( gdata, 1, 2, sort_data=false )
-    pv[:poverty_gap_gini] = make_gini( gdata )
+    pv.poverty_gap_gini = make_gini( gdata )
 
-    pv[:sen] = pv[:headcount]*pv[:gini_amongst_poor]+pv[:gap]*(1.0-pv[:gini_amongst_poor])
-    pv[:shorrocks] = pv[:headcount]*pv[:gap]*(1.0+pv[:poverty_gap_gini])
+    pv.sen = pv.headcount*pv.gini_amongst_poor+pv.gap*(1.0-pv.gini_amongst_poor)
+    pv.shorrocks  = pv.headcount*pv.gap*(1.0+pv.poverty_gap_gini)
     return pv
 end # make_poverty
 
@@ -296,38 +368,35 @@ don't understand them ..
  popindic : Inequal for the population as a whole
  subindices : an array of dics, one for each subgroup of interest
 """
-function add_decomposed_theil( popindic :: OutputDict, subindices :: OutputDictArray ) :: OutputDict
-    popn = popindic[:total_population]
-    income = popindic[:total_income]
-    avinc = popindic[:average_income]
+function add_decomposed_theil( popindic :: InequalityMeasures, subindices :: Vector{InequalityMeasures} ) :: NamedTuple
+    popn = popindc.total_population 
+    income = popindc.total_income 
+    avinc = popindc.average_income 
     within = zeros(2)
     between = zeros(2)
     totalpop = 0.0
     totalinc = 0.0
     for ind in subindices
-        popshare = ind[:total_population]/popn
-        incshare = ind[:total_income]/income
+        popshare = ind.total_population/popn
+        incshare = ind.total_income/income
         totalpop += popshare
         totalinc += incshare
 
-        within[1] += ind[:theil][1]*popshare
+        within[1] += ind.theil[1]*popshare
         between[1] += popshare*log(avinc/ind[:average_income])
 
-        within[2] += ind[:theil][2]*incshare
+        within[2] += ind.theil[2]*incshare
         between[2] += incshare*log(incshare/popshare)
-
     end
-    overall1 = popindic[:theil][1]
-    overall2 = popindic[:theil][2]
+    overall1 = popindc.theil[1]
+    overall2 = popindc.theil[2]
 
     @assert totalpop ≈ 1.0
     @assert totalinc ≈ 1.0
-    @assert within[1]+between[1] ≈ popindic[:theil][1]
-    @assert within[2]+between[2] ≈ popindic[:theil][2]
-    md = OutputDict()
-    md[:theil_between] = between
-    md[:theil_within] = within
-    md
+    @assert within[1]+between[1] ≈ popindc.theil [1]
+    @assert within[2]+between[2] ≈ popindc.theil [2]
+    
+    ( theil_between = between, theil_within = within )
 end
 
 """
@@ -367,7 +436,7 @@ function make_inequality(
     weightpos                  :: Integer = 1,
     incomepos                  :: Integer = 2,
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
+    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
     data = make_augmented( rawdata, weightpos, incomepos )
     return make_inequalityinternal(
         data = data,
@@ -385,7 +454,7 @@ function make_inequality(
     weightcol                  :: Symbol,
     incomecol                  :: Symbol,
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
+    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
     data = make_augmented( rawdata, weightcol, incomecol )
     return make_inequalityinternal(
@@ -429,14 +498,15 @@ end
 ## FIXME this can go horribly wrong with small unbalanced numbers of rows -
 # try pop=[22,1,1,1,1,1,1,1,1,1 inc==[1,2,2,2,2,2,2,2,2,2]
 function binifyinternal(
-    data      :: Array{<:Real, 2 },
-    numbins   :: Integer ) :: AbstractArray{<:Real, 2}
+    data      :: Matrix,
+    numbins   :: Integer ) :: Matrix
+    T = eltype( data )
     nrows = size( data )[1]
     ncols = size( data )[2]
-    out = zeros( Float64, numbins, 3 )
+    out = zeros( T, numbins, 3 )
     total_population = data[ nrows, POPN_ACCUM ]
     total_income = data[ nrows, INCOME_ACCUM ]
-    bin_size :: Float64 = 1.0/numbins
+    bin_size :: T = 1.0/numbins
     bno = 0
     thresh = bin_size
     popsharelast = 0.0
@@ -487,83 +557,92 @@ This is mainly taken from chs 5 and 6 of the World Bank book.
 """
 function make_inequalityinternal(
     ;
-    data                       :: Array{Float64, 2},
+    data                       :: Matrix,
     atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: OutputDict
+    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
     nrows = size( data )[1]
     ncols = size( data )[2]
     @assert ncols == 5 "data should have 5 cols but has $ncols"
-
+    
+    T = eltype( generalised_entropy_alphas )
+    z = zero(T)
     nats = size( atkinson_es )[1]
     neps = size( generalised_entropy_alphas )[1]
-    iq = OutputDict()
+    iq =InequalityMeasures( 
+        atkinson_es, 
+        [i == 1.0 ? 1.0 : 0.0 for i in atkinson_es], 
+        generalised_entropy_alphas, 
+        zeros(T,neps),
+        z,
+        zeros(T,2),
+        z,
+        z,
+        z,
+        z,
+        z,
+        z,
+        zeros( T, 10, 3 ),
+        0 )
+        
     # initialise atkinsons; 1 for e = 1 0 otherwise
-    iq[:atkinson_es] = atkinson_es
-    iq[:atkinson] = zeros( Float64, nats )
-    iq[:atkinson] = [i == 1.0 ? 1.0 : 0.0 for i in atkinson_es]
-    iq[:generalised_entropy_alphas] = generalised_entropy_alphas
-    iq[:generalised_entropy] = zeros( Float64, neps )
-    iq[:negative_or_zero_income_count] = 0
-    iq[:hoover] = 0.0
-    iq[:theil] = zeros(Float64,2)
-    iq[:gini] = make_gini( data )
-
+    
+    iq.gini = make_gini( data )
     total_income = data[nrows,INCOME_ACCUM]
     total_population = data[nrows,POPN_ACCUM]
     y_bar = total_income/total_population
-    iq[:total_income] = total_income
-    iq[:total_population] = total_population
-    iq[:average_income] = y_bar
+    iq.total_income = total_income
+    iq.total_population = total_population
+    iq.average_income = y_bar
     popsharelast = 0.0
     incomelast = 0.0
     for row in 1:nrows
         income = data[row,INCOME]
         weight = data[row,WEIGHT]
         if income > 0.0
-            y_yb  :: Float64 = income/y_bar
-            yb_y  :: Float64 = y_bar/income
-            ln_y_yb :: Float64 = log( y_yb )
-            ln_yb_y :: Float64 = log( yb_y )
-            iq[:hoover] += weight*abs( income - y_bar )
-            iq[:theil][1] += weight*ln_yb_y
-            iq[:theil][2] += weight*y_yb*ln_y_yb
+            y_yb  :: T = income/y_bar
+            yb_y  :: T = y_bar/income
+            ln_y_yb :: T = log( y_yb )
+            ln_yb_y :: T = log( yb_y )
+            iq.hoover += weight*abs( income - y_bar )
+            iq.theil[1] += weight*ln_yb_y
+            iq.theil[2] += weight*y_yb*ln_y_yb
             for i in 1:nats
-                    es :: Float64 = iq[:atkinson_es][i]
+                    es :: T = iq.atkinson_es[i]
                     if es != 1.0
-                        iq[:atkinson][i] += weight*(y_yb^(1.0-es))
+                        iq.atkinson[i] += weight*(y_yb^(1.0-es))
                     else
-                        iq[:atkinson][i] *= (income)^(weight/total_population)
+                        iq.atkinson[i] *= (income)^(weight/total_population)
                     end # e = 1 case
             end # atkinsons
             for i in 1:neps
-                alpha :: Float64 = iq[:generalised_entropy_alphas][i]
-                iq[:generalised_entropy][i] += weight*(y_yb^alpha)
+                alpha :: T = iq.generalised_entropy_alphas[i]
+                iq.generalised_entropy[i] += weight*(y_yb^alpha)
             end # entropies
         else
-            iq[:negative_or_zero_income_count] += 1
+            iq.negative_or_zero_income_count += 1
         end # positive income
     end # main loop
     deciles = binify( data, 10 )
-    iq[:median] = deciles[5,3]
+    iq.median = deciles[5,3]
     # top 10/bottom 40
-    iq[:palma] = (1.0-deciles[9,2])/deciles[4,2]
-    iq[:deciles] = deciles
-    iq[:hoover] /= 2.0*total_income
+    iq.palma = (1.0-deciles[9,2])/deciles[4,2]
+    iq.deciles = deciles
+    iq.hoover /= 2.0*total_income
     for i in 1:neps
-        alpha :: Float64 = iq[:generalised_entropy_alphas][i]
-        aq :: Float64 = (1.0/(alpha*(alpha-1.0)))
-        iq[:generalised_entropy][i] =
-            aq*((iq[:generalised_entropy][i]/total_population)-1.0)
+        alpha :: T = iq.generalised_entropy_alphas[i]
+        aq :: T = (1.0/(alpha*(alpha-1.0)))
+        iq.generalised_entropy[i] =
+            aq*((iq.generalised_entropy[i]/total_population)-1.0)
     end # entropies
     for i in 1:nats
-        es :: Float64 = iq[:atkinson_es][i]
+        es :: T = iq.atkinson_es[i]
         if es != 1.0
-            iq[:atkinson][i] = 1.0 - ( iq[:atkinson][i]/total_population )^(1.0/(1.0-es))
+            iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/total_population )^(1.0/(1.0-es))
         else
-            iq[:atkinson][i] = 1.0 - ( iq[:atkinson][i]/y_bar )
+            iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/y_bar )
         end # e = 1
     end
-    iq[:theil] ./= total_population
+    iq.theil ./= total_population
     return iq
 end # make_inequalityinternal
 

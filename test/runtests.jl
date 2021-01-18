@@ -109,29 +109,29 @@ end
     country_e_pov = make_poverty( country_e, line, growth )
     print("country E " );println( country_e_pov )
 
-    @test comparedics( country_a_pov, country_a_2_pov )
-    @test comparedics( country_c_pov, country_e_pov )
-    # @test comparedics( country_c_pov, country_d_pov )
+    @test povs_equal( country_a_pov, country_a_2_pov )
+    @test povs_equal( country_c_pov, country_e_pov )
+    # @test povs_equal( country_c_pov, country_d_pov )
 
     # numbers from WP ch. 4
-    @test country_a_pov[:headcount] ≈ 0.5
-    @test country_b_pov[:headcount] ≈ 0.5
-    @test country_b_pov[:gap] ≈ 1.0/250.0
-    @test country_c_pov[:watts] ≈ 0.0877442307
+    @test country_a_pov.headcount ≈ 0.5
+    @test country_b_pov.headcount ≈ 0.5
+    @test country_b_pov.gap ≈ 1.0/250.0
+    @test country_c_pov.watts ≈ 0.0877442307
     # some of these are hand-calculations, for from Ada version
-    @test isapprox( country_c_pov[:gap], 0.080000, atol = TOL )
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 1 ], 0.5000000, atol = TOL ) # pov level
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 2 ], 0.1984059, atol = TOL )
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 3 ], 0.0800000, atol = TOL )
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 4 ], 0.0327530, atol = TOL )
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 5 ], 0.0136000, atol = TOL )
-    @test isapprox( country_c_pov[:foster_greer_thorndyke][ 6 ], 0.0057192, atol = TOL )
-    @test isapprox( country_c_pov[:sen ], 0.0900000, atol = TOL )
-    @test isapprox( country_c_pov[:shorrocks ], 0.0625000, atol = TOL )
-    @test isapprox( country_c_pov[:watts ], 0.0877442, atol = TOL )
-    @test isapprox( country_c_pov[:time_to_exit ], 1.7548846, atol = TOL )
-    @test isapprox( country_c_pov[:gini_amongst_poor ], 0.0238095, atol = TOL )
-    @test isapprox( country_c_pov[:poverty_gap_gini ], 0.5625000, atol = TOL )
+    @test isapprox( country_c_pov.gap, 0.080000, atol = TOL )
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 1 ], 0.5000000, atol = TOL ) # pov level
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 2 ], 0.1984059, atol = TOL )
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 3 ], 0.0800000, atol = TOL )
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 4 ], 0.0327530, atol = TOL )
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 5 ], 0.0136000, atol = TOL )
+    @test isapprox( country_c_pov.foster_greer_thorndyke[ 6 ], 0.0057192, atol = TOL )
+    @test isapprox( country_c_pov.sen , 0.0900000, atol = TOL )
+    @test isapprox( country_c_pov.shorrocks , 0.0625000, atol = TOL )
+    @test isapprox( country_c_pov.watts , 0.0877442, atol = TOL )
+    @test isapprox( country_c_pov.time_to_exit , 1.7548846, atol = TOL )
+    @test isapprox( country_c_pov.gini_amongst_poor , 0.0238095, atol = TOL )
+    @test isapprox( country_c_pov.poverty_gap_gini , 0.5625000, atol = TOL )
 end # poverty testset
 
 #
@@ -161,33 +161,58 @@ end # poverty testset
     iq4 = make_inequality( c4 )
     iq64k = make_inequality( c64k )
     # weighting and multiplying should make no difference
-    @test comparedics( iq1, iq2, [:total_income, :total_population, :deciles] )
     println( "iq1");println( iq1 )
     println( "iq2");println( iq2 )
     println( "iq3");println( iq3 )
     println( "iq64k");println( iq64k )
 
-    @test comparedics( iq1, iq3, [:total_income, :total_population, :deciles] )
-    @test comparedics( iq1, iq4, [:total_income, :total_population, :deciles] )
-    @test comparedics( iq1, iq64k, [:total_income, :total_population, :deciles] )
-    @test isapprox( iq1[:gini ], 0.3272727, atol = TOL )
-    @test isapprox( iq1[:theil][1], 0.1792203, atol = TOL )
-    @test isapprox( iq1[:theil][2],  0.1830644, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 1 ], 0.1883288, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 2 ], 0.1954897, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 3 ], 0.2047211, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 4 ], 0.2162534, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 5 ], 0.2303812, atol = TOL )
-    @test isapprox( iq1[:generalised_entropy][ 6 ], 0.2474728, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 1 ], 0.0446396, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 2 ], 0.0869155, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 3 ], 0.1267328, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 4 ], 0.1640783, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 5 ], 0.1989991, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 6 ], 0.2315817, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 7 ], 0.2619332, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 8 ], 0.2901688, atol = TOL )
-    @test isapprox( iq1[:atkinson][ 9 ], 0.3164032, atol = TOL )
-    @test isapprox( iq1[:hoover], 0.2363636, atol = TOL )
+
+    @test isapprox( iq1.gini , iq64k.gini )
+    @test isapprox( iq1.hoover , iq4.hoover )
+    @test isapprox( iq1.palma , iq64k.palma )
+    @test isapprox( iq1.atkinson , iq64k.atkinson )
+    @test isapprox( iq1.theil , iq64k.theil )
+    @test isapprox( iq1.generalised_entropy, iq64k.generalised_entropy )
+    
+    @test isapprox( iq1.gini , iq2.gini )
+    @test isapprox( iq1.palma , iq2.palma )
+    @test isapprox( iq1.atkinson , iq2.atkinson )
+    @test isapprox( iq1.hoover , iq2.hoover )
+    @test isapprox( iq1.theil , iq2.theil )
+    @test isapprox( iq1.generalised_entropy, iq2.generalised_entropy )
+
+    @test isapprox( iq1.gini , iq3.gini )
+    @test isapprox( iq1.palma , iq3.palma )
+    @test isapprox( iq1.atkinson , iq3.atkinson )
+    @test isapprox( iq1.hoover , iq4.hoover )
+    @test isapprox( iq1.theil , iq3.theil )
+    @test isapprox( iq1.generalised_entropy, iq3.generalised_entropy )
+    
+    @test isapprox( iq1.gini , iq4.gini )
+    @test isapprox( iq1.palma , iq4.palma )
+    @test isapprox( iq1.atkinson , iq4.atkinson )
+    @test isapprox( iq1.hoover , iq4.hoover )
+    @test isapprox( iq1.theil , iq4.theil )
+    @test isapprox( iq1.generalised_entropy, iq4.generalised_entropy )
+    
+    @test isapprox( iq1.gini , 0.3272727, atol = TOL )
+    @test isapprox( iq1.theil[1], 0.1792203, atol = TOL )
+    @test isapprox( iq1.theil[2],  0.1830644, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 1 ], 0.1883288, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 2 ], 0.1954897, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 3 ], 0.2047211, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 4 ], 0.2162534, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 5 ], 0.2303812, atol = TOL )
+    @test isapprox( iq1.generalised_entropy[ 6 ], 0.2474728, atol = TOL )
+    @test isapprox( iq1.atkinson[ 1 ], 0.0446396, atol = TOL )
+    @test isapprox( iq1.atkinson[ 2 ], 0.0869155, atol = TOL )
+    @test isapprox( iq1.atkinson[ 3 ], 0.1267328, atol = TOL )
+    @test isapprox( iq1.atkinson[ 4 ], 0.1640783, atol = TOL )
+    @test isapprox( iq1.atkinson[ 5 ], 0.1989991, atol = TOL )
+    @test isapprox( iq1.atkinson[ 6 ], 0.2315817, atol = TOL )
+    @test isapprox( iq1.atkinson[ 7 ], 0.2619332, atol = TOL )
+    @test isapprox( iq1.atkinson[ 8 ], 0.2901688, atol = TOL )
+    @test isapprox( iq1.atkinson[ 9 ], 0.3164032, atol = TOL )
+    @test isapprox( iq1.hoover, 0.2363636, atol = TOL )
     print( iq1 )
 end # inequality testset
