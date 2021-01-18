@@ -1,17 +1,3 @@
-using PovertyAndInequalityMeasures
-using DataFrames
-#
-# Note that CSV and Plots are *not* dependencies of 
-# this project. You'll need to copy this file out
-# of the package tree and install Plots and CSV manually.
-#
-using Plots, CSV
-#pgfplotsx()
-#pgfplotsx()
-#Plots.PGFPlotsXBackend()
-# using PyPlot 
-pyplot()
-Plots.PyPlotBackend()
 #
 # An example of using this package to (not quite) reproduce hbai ineq time-series from:
 # https://www.gov.uk/government/statistics/households-below-average-income-199495-to-201819
@@ -23,11 +9,48 @@ Plots.PyPlotBackend()
 # We're using hbai household level data data 1994/5->2018/19 from [UKDS](https://www.ukdataservice.ac.uk/) 
 # (series UKDA-5828).
 # 
+#
+# An example of using this package to (not quite) reproduce hbai ineq time-series from:
+# https://www.gov.uk/government/statistics/households-below-average-income-199495-to-201819
+# for GB and also Scotland, for income and also wages.
+# See: 
+# Data Tables->income-values-and-inequality-measures-hbai-1994-95-2018-19-tables.ods
+# sheets 2_2tsBHC/AHC 
+#
+# We're using hbai household level data data 1994/5->2018/19 from [UKDS](https://www.ukdataservice.ac.uk/) 
+# (series UKDA-5828).
+# 
+# dependencies: run these once only
+using Pkg
+Pkg.add( "PovertyAndInequalityMeasures" )
+Pkg.add( "DataFrames" )
+Pkg.add( "CSV" )
+Pkg.add( "Plots" )
+Pkg.add( "PyPlot" )
+Pkg.add( "StatsKit" )
+Pkg.add( "RegressionTables" )
+Pkg.add( "GLM" )
+
+using StatsKit
+using RegressionTables
+using GLM
+using PovertyAndInequalityMeasures
+using DataFrames
+using Plots
+using CSV
+# using PyPlot
+
+# note PyPlot is only 1 of several possible rendering engines
+pyplot()
+Plots.PyPlotBackend()
+
 # .. change this, obvs:
 datadir="/mnt/data/hbai/tab/"
 start_year = 1994
 end_year = 2018
 n = end_year - start_year + 1
+
+# dataframe for annual results 
 out=DataFrame( 
     year=zeros(Int,n), 
     scot_pop=zeros(n),
@@ -147,8 +170,6 @@ savefig(grid, "~/tmp/scotland_inequality.png")
 
 savefig(grid, "~/tmp/scotland_inequality.pdf" )
 
-using StatsKit
-using RegressionTables
 sco_gini_r1 = GLM.lm( @formula( sco_gini_ahc ~ year ), out )
 sco_gini_r2 = GLM.lm( @formula( sco_gini_bhc ~ year ), out )
 sco_gini_r3 = GLM.lm( @formula( sco_gini_ahc ~ year+snp ), out )
