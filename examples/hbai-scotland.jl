@@ -100,7 +100,7 @@ for y in start_year:end_year
     gb_ineq_bhc = make_inequality( gb,:gs_newpp,:s_oe_bhc )
     gb_ineq_ahc = make_inequality( gb,:gs_newpp,:s_oe_ahc )
     gb_popn = sum( gb.gs_newpp )
-    @assert gb_popn ≈ gb_ineq_ahc[:total_population]
+    @assert gb_popn ≈ gb_ineq_ahc.total_population
     
     out[r, :year] = y
     out[r, :scot_pop] = sco_popn
@@ -114,10 +114,10 @@ for y in start_year:end_year
     out[r, :sco_palma_ahc] = sco_ineq_ahc.palma
     out[r, :gb_palma_bhc] = gb_ineq_bhc.palma
     out[r, :gb_palma_ahc] = gb_ineq_ahc.palma
-    out[r, :sco_atkinson_ahc_1] = sco_ineq_ahc.atkinson][4]
-    out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc.atkinson][4]
-    out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc.atkinson][8]   
-    out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc.atkinson][8]
+    out[r, :sco_atkinson_ahc_1] = sco_ineq_ahc.atkinson[4]
+    out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc.atkinson[4]
+    out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc.atkinson[8]   
+    out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc.atkinson[8]
 end
 
 out.snp = out.year .>= 2007 # snp dummy

@@ -114,10 +114,10 @@ function make_augmented(
     delete_negatives :: Bool = false ) :: Matrix
     @assert TableTraits.isiterabletable( data ) "data needs to implement IterableTables"
     data = DataFrame(data) # this just makes iteration&handling missings easier
-    T = elype( data )
+    T = eltype( data )
     # iter = IteratorInterfaceExtensions.getiterator(data)
     nrows = size(data)[1]
-    aug = zeros( nrows, 5 )
+    aug = zeros( T, nrows, 5 )
     r = 0
     for row in eachrow(data)
         if ( ismissing( row[weightcol])) || ( ismissing( row[incomecol])) ||
