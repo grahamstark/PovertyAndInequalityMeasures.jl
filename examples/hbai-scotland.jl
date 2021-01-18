@@ -104,20 +104,20 @@ for y in start_year:end_year
     
     out[r, :year] = y
     out[r, :scot_pop] = sco_popn
-    out[r, :sco_gini_bhc] = sco_ineq_bhc[:gini]
-    out[r, :sco_gini_ahc] = sco_ineq_ahc[:gini]
-    out[r, :sco_gini_wage] = sco_ineq_wage[:gini]
+    out[r, :sco_gini_bhc] = sco_ineq_bhc.gini
+    out[r, :sco_gini_ahc] = sco_ineq_ahc.gini
+    out[r, :sco_gini_wage] = sco_ineq_wage.gini
     out[r, :gb_pop] = gb_popn
-    out[r, :gb_gini_bhc] = gb_ineq_bhc[:gini]
-    out[r, :gb_gini_ahc] =  gb_ineq_ahc[:gini]
-    out[r, :sco_palma_bhc] = sco_ineq_bhc[:palma]
-    out[r, :sco_palma_ahc] = sco_ineq_ahc[:palma]
-    out[r, :gb_palma_bhc] = gb_ineq_bhc[:palma]
-    out[r, :gb_palma_ahc] = gb_ineq_ahc[:palma]
-    out[r, :sco_atkinson_ahc_1] = sco_ineq_ahc[:atkinson][4]
-    out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc[:atkinson][4]
-    out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc[:atkinson][8]    
-    out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc[:atkinson][8]
+    out[r, :gb_gini_bhc] = gb_ineq_bhc.gini
+    out[r, :gb_gini_ahc] =  gb_ineq_ahc.gini
+    out[r, :sco_palma_bhc] = sco_ineq_bhc.palma
+    out[r, :sco_palma_ahc] = sco_ineq_ahc.palma
+    out[r, :gb_palma_bhc] = gb_ineq_bhc.palma
+    out[r, :gb_palma_ahc] = gb_ineq_ahc.palma
+    out[r, :sco_atkinson_ahc_1] = sco_ineq_ahc.atkinson][4]
+    out[r, :sco_atkinson_bhc_1] = sco_ineq_bhc.atkinson][4]
+    out[r, :sco_atkinson_ahc_2] = sco_ineq_ahc.atkinson][8]   
+    out[r, :sco_atkinson_bhc_2] = sco_ineq_bhc.atkinson][8]
 end
 
 out.snp = out.year .>= 2007 # snp dummy
