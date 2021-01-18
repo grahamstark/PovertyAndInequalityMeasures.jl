@@ -85,7 +85,11 @@ function ineqs_equal( i1 :: InequalityMeasures, i2 :: InequalityMeasures; includ
     return eq
 end
 
-function sortAndAccumulate( aug :: Array{<:Real,2}, sort_data :: Bool, nrows :: Integer ) :: Array{<:Real,2}
+#
+# FIXME this shouldn't need to return a copy!
+#
+function sortAndAccumulate( 
+    aug :: Matrix, sort_data :: Bool, nrows :: Integer )
     if sort_data
         aug = sortslices( aug, alg=QuickSort, dims=1,lt=((x,y)->isless(x[INCOME],y[INCOME])))
     end
@@ -131,8 +135,7 @@ function make_augmented(
         end # not missing or negative
     end
     aug = aug[1:r,:]
-    aug = sortAndAccumulate( aug, sort_data, r )
-    return aug
+    return sortAndAccumulate( aug, sort_data, r )
 end
 
 "
@@ -140,15 +143,15 @@ internal function that makes a sorted array
 with cumulative income and population added
 "
 function make_augmented(
-    data            :: Array{<:Real,2},
+    data            :: Matrix,
     weightpos       :: Integer = 1,
     incomepos       :: Integer = 2;
 
     sort_data        :: Bool = true,
     delete_negatives :: Bool = false ) :: Matrix
-
+    T = eltype( data )
     nrows = size( data )[1]
-    aug = zeros( nrows, 5 )
+    aug = zeros( T, nrows, 5 )
     r = 0
     for row in 1:nrows
         if( delete_negatives && data[row,incomepos] < 0.0 )
@@ -160,17 +163,15 @@ function make_augmented(
             aug[r,WEIGHTED_INCOME] = data[row,incomepos]*data[row,weightpos]
         end # not neg or negs accepted
     end # row loop
-    aug = sortAndAccumulate( aug, sort_data, r )
-    return aug[1:r,:]
+    return sortAndAccumulate( aug[1:r,:], sort_data, r )
+    # return aug[1:r,:]
 end
 
 """
 calculate a Gini coefficient on one of our sorted arrays
 """
 function make_gini( data :: Matrix ) :: Real
-    T = eltype( data )
     lorenz = 0.0
-
     nrows = size( data )[1]
     if nrows == 0
         return 0.0
