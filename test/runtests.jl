@@ -1,4 +1,5 @@
 using PovertyAndInequalityMeasures
+using DataFrames
 using Test
 
 #
@@ -111,8 +112,13 @@ end
 
     @test povs_equal( country_a_pov, country_a_2_pov )
     @test povs_equal( country_c_pov, country_e_pov )
+    
     # @test povs_equal( country_c_pov, country_d_pov )
-
+    # test dataframes same as A
+    country_a_df = DataFrame( weight=[2.0, 2.0], income=[100.0, 150])
+    country_a_pov_df = make_poverty( country_a_df, line, growth, :weight, :income )
+    @test povs_equal( country_a_pov_df, country_a_pov )
+    
     # numbers from WP ch. 4
     @test country_a_pov.headcount ≈ 0.5
     @test country_b_pov.headcount ≈ 0.5
@@ -166,6 +172,10 @@ end # poverty testset
     println( "iq3");println( iq3 )
     println( "iq64k");println( iq64k )
 
+    # test from dataframe
+    cdf = DataFrame(income=c1[:,2], weight=c1[:,1]) 
+    iqdf = make_inequality( cdf, :weight, :income)
+    @test ineqs_equal( iqdf, iq1 )
 
     @test isapprox( iq1.gini , iq64k.gini )
     @test isapprox( iq1.hoover , iq4.hoover )
