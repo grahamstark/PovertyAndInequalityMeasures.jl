@@ -412,7 +412,7 @@ function add_decomposed_theil( popindc :: InequalityMeasures, subindices :: Vect
 end
 
 """
-Make a dictionary of inequality measures.
+Make a struct of inequality measures.
 This is mainly taken from chs 5 and 6 of the World Bank book.
 
 1. `rawdata` a matrix with cols with weights and incomes
@@ -434,7 +434,7 @@ Returned is a Dict of inequality measures with:
 
 See WB chs 5 an 6, and Cobham and Sumner on the Palma.
 
-Also in the dict are:
+Also in the struct are:
 
 * `total_income`
 * `total_population`
