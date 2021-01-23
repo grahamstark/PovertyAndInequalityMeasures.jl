@@ -1,7 +1,7 @@
 using PovertyAndInequalityMeasures
 using DataFrames
 using Test
-
+using CSV
 #
 # These tests mostly try to replicate examples from
 # World Bank 'Handbook on poverty and inequality'
@@ -176,38 +176,15 @@ end # poverty testset
     cdf = DataFrame(income=c1[:,2], weight=c1[:,1]) 
     iqdf = make_inequality( cdf, :weight, :income)
     @test ineqs_equal( iqdf, iq1 )
-
-    @test isapprox( iq1.gini , iq64k.gini )
-    @test isapprox( iq1.hoover , iq4.hoover )
-    @test isapprox( iq1.palma , iq64k.palma )
-    @test isapprox( iq1.atkinson , iq64k.atkinson )
-    @test isapprox( iq1.theil , iq64k.theil )
-    @test isapprox( iq1.generalised_entropy, iq64k.generalised_entropy )
+    @test ineqs_equal( iq1 , iq64k, include_populations = false )
+    @test ineqs_equal( iq1 , iq2, include_populations = false )
+    @test ineqs_equal( iq1 , iq3, include_populations = false )
+    @test ineqs_equal( iq1 , iq4, include_populations = false )
     
-    @test isapprox( iq1.gini , iq2.gini )
-    @test isapprox( iq1.palma , iq2.palma )
-    @test isapprox( iq1.atkinson , iq2.atkinson )
-    @test isapprox( iq1.hoover , iq2.hoover )
-    @test isapprox( iq1.theil , iq2.theil )
-    @test isapprox( iq1.generalised_entropy, iq2.generalised_entropy )
-
-    @test isapprox( iq1.gini , iq3.gini )
-    @test isapprox( iq1.palma , iq3.palma )
-    @test isapprox( iq1.atkinson , iq3.atkinson )
-    @test isapprox( iq1.hoover , iq4.hoover )
-    @test isapprox( iq1.theil , iq3.theil )
-    @test isapprox( iq1.generalised_entropy, iq3.generalised_entropy )
-    
-    @test isapprox( iq1.gini , iq4.gini )
-    @test isapprox( iq1.palma , iq4.palma )
-    @test isapprox( iq1.atkinson , iq4.atkinson )
-    @test isapprox( iq1.hoover , iq4.hoover )
-    @test isapprox( iq1.theil , iq4.theil )
-    @test isapprox( iq1.generalised_entropy, iq4.generalised_entropy )
     
     @test isapprox( iq1.gini , 0.3272727, atol = TOL )
-    @test isapprox( iq1.theil[1], 0.1792203, atol = TOL )
-    @test isapprox( iq1.theil[2],  0.1830644, atol = TOL )
+    @test isapprox( iq1.theil_l, 0.1792203, atol = TOL )
+    @test isapprox( iq1.theil_t,  0.1830644, atol = TOL )
     @test isapprox( iq1.generalised_entropy[ 1 ], 0.1883288, atol = TOL )
     @test isapprox( iq1.generalised_entropy[ 2 ], 0.1954897, atol = TOL )
     @test isapprox( iq1.generalised_entropy[ 3 ], 0.2047211, atol = TOL )
@@ -226,3 +203,54 @@ end # poverty testset
     @test isapprox( iq1.hoover, 0.2363636, atol = TOL )
     print( iq1 )
 end # inequality testset
+
+hbai_dir = "/mnt/data/hbai/tab/"
+if isdir(hbai_dir)
+	# HBAI example if available
+	    # load each year & jam varnames to lower case
+    hbai =  CSV.File("$(hbai_dir)h1819.tab")|>DataFrame
+    lcnames = Symbol.(lowercase.(string.(names(hbai))))
+    rename!(hbai, lcnames)
+    # make scottish subset
+    positives = hbai[(hbai.s_oe_ahc .> 0.0 ),:]
+    
+    regions = Vector{InequalityMeasures}(undef,0)
+    nations = Vector{InequalityMeasures}(undef,0)
+    scot = positives[(positives.gvtregn .== 12),:]
+    wal  = positives[(positives.gvtregn .== 11),:]
+    nire = positives[(positives.gvtregn .== 13),:]
+    eng = positives[(positives.gvtregn .< 11),:]
+    
+    for reg in 1:13
+    	println("region $reg ")
+    	if reg != 3
+	    	rd = positives[(positives.gvtregn .== reg),:]
+	    	ineq_ahc = make_inequality( rd,:gs_newpp,:s_oe_ahc )
+	    	push!(regions, ineq_ahc )
+	     end
+    end
+    #  theil decomp isn't exact if <0 incomes included
+	uk_ineq_ahc = make_inequality( positives,:gs_newpp,:s_oe_ahc )
+    
+	sco_ineq_ahc = make_inequality( scot,:gs_newpp,:s_oe_ahc )
+	push!( nations, sco_ineq_ahc )
+
+	wal_ineq_ahc = make_inequality( wal,:gs_newpp,:s_oe_ahc )
+	push!( nations, wal_ineq_ahc )
+    
+	nire_ineq_ahc = make_inequality( nire,:gs_newpp,:s_oe_ahc )
+	push!( nations, nire_ineq_ahc )
+	
+	eng_ineq_ahc = make_inequality( eng,:gs_newpp,:s_oe_ahc )
+	push!( nations, eng_ineq_ahc )
+
+	dt_regions = add_decomposed_theil( uk_ineq_ahc, regions )
+	dt_nations = add_decomposed_theil( uk_ineq_ahc, nations )
+    
+    pvline_ahc = positives.mdoeahc[1]*0.6
+    pvline_bhc = positives.mdoebhc[1]*0.6
+
+	eng_pov_ahc = make_poverty( eng, pvline_ahc, 0.02, :gs_newpp,:s_oe_ahc )
+	sco_pov_ahc = make_poverty( scot, pvline_ahc, 0.02, :gs_newpp,:s_oe_ahc )
+	
+end

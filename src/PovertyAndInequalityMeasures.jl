@@ -53,7 +53,9 @@ mutable struct InequalityMeasures{T<:Real}
     generalised_entropy_alphas :: Vector{T}
     generalised_entropy :: Vector{T}
     hoover :: T
-    theil :: Vector{T}
+    theil_l :: T
+    theil_t :: T
+    
     gini :: T
     palma :: T
     median :: T
@@ -70,7 +72,8 @@ function ineqs_equal( i1 :: InequalityMeasures, i2 :: InequalityMeasures; includ
         ( i1.generalised_entropy_alphas ≈ i2.generalised_entropy_alphas ) &&
         ( i1.generalised_entropy ≈ i2.generalised_entropy ) &&
         ( i1.hoover ≈ i2.hoover ) &&
-        ( i1.theil ≈ i2.theil ) &&
+        ( i1.theil_l ≈ i2.theil_l ) &&
+        ( i1.theil_t ≈ i2.theil_t ) &&
         ( i1.gini ≈ i2.gini ) &&
         ( i1.palma ≈ i2.palma ) &&
         ( i1.median ≈ i2.median )
@@ -119,6 +122,11 @@ function make_augmented(
     @assert TableTraits.isiterabletable( data ) "data needs to implement IterableTables"
     data = DataFrame(data) # this just makes iteration&handling missings easier
     T = eltype( data[!,incomecol] )
+    if ! ( T <: AbstractFloat )
+	    T = Float64 # jam on some real type regardless of the datatype of the frame if not some type of real
+    end
+	# better if int then float otherwise leave 
+    # 
     # iter = IteratorInterfaceExtensions.getiterator(data)
     nrows = size(data)[1]
     aug = zeros( T, nrows, 5 )
@@ -150,6 +158,10 @@ function make_augmented(
     sort_data        :: Bool = true,
     delete_negatives :: Bool = false ) :: Matrix
     T = eltype( data )
+    if ! ( T <: AbstractFloat )
+	    T = Float64 # jam on some real type regardless of the datatype of the data matrix if not some type of real
+    end
+
     nrows = size( data )[1]
     aug = zeros( T, nrows, 5 )
     r = 0
@@ -237,12 +249,12 @@ See World Bank, ch. 4.
 
 """
 function make_poverty(
-    rawdata                       :: Array{<:Real, 2},
+    rawdata                       :: Matrix,
     line                          :: Real,
     growth                        :: Real,
     weightpos                     :: Integer = 1,
     incomepos                     :: Integer = 2,
-    foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS ) :: PovertyMeasures
+    foster_greer_thorndyke_alphas :: Vector = DEFAULT_FGT_ALPHAS ) :: PovertyMeasures
 
     data = make_augmented( rawdata, weightpos, incomepos )
     make_povertyinternal(
@@ -263,7 +275,7 @@ function make_poverty(
     growth                        :: Real,
     weightcol                     :: Symbol,
     incomecol                     :: Symbol,
-    foster_greer_thorndyke_alphas :: AbstractArray{<:Real, 1} = DEFAULT_FGT_ALPHAS,
+    foster_greer_thorndyke_alphas :: Vector = DEFAULT_FGT_ALPHAS,
      ) :: PovertyMeasures
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
     data = make_augmented( rawdata, weightcol, incomecol )
@@ -366,15 +378,18 @@ TODO
 don't understand them ..
 2. the over time 3-part version
 
- popindic : Inequal for the population as a whole
+ popindc : Inequal for the population as a whole
  subindices : an array of dics, one for each subgroup of interest
 """
-function add_decomposed_theil( popindic :: InequalityMeasures, subindices :: Vector{InequalityMeasures} ) :: NamedTuple
+function add_decomposed_theil( popindc :: InequalityMeasures, subindices :: Vector{InequalityMeasures} ) :: NamedTuple
     popn = popindc.total_population 
     income = popindc.total_income 
     avinc = popindc.average_income 
-    within = zeros(2)
-    between = zeros(2)
+    within_l = 0.0
+    within_t = 0.0
+    
+    between_l = 0.0
+    between_t = 0.0
     totalpop = 0.0
     totalinc = 0.0
     for ind in subindices
@@ -383,21 +398,17 @@ function add_decomposed_theil( popindic :: InequalityMeasures, subindices :: Vec
         totalpop += popshare
         totalinc += incshare
 
-        within[1] += ind.theil[1]*popshare
-        between[1] += popshare*log(avinc/ind[:average_income])
+        within_l += ind.theil_l*popshare
+        between_l += popshare*log(avinc/ind.average_income)
 
-        within[2] += ind.theil[2]*incshare
-        between[2] += incshare*log(incshare/popshare)
+        within_t += ind.theil_t*incshare
+        between_t += incshare*log(incshare/popshare)
     end
-    overall1 = popindc.theil[1]
-    overall2 = popindc.theil[2]
-
     @assert totalpop ≈ 1.0
     @assert totalinc ≈ 1.0
-    @assert within[1]+between[1] ≈ popindc.theil [1]
-    @assert within[2]+between[2] ≈ popindc.theil [2]
-    
-    ( theil_between = between, theil_within = within )
+    @assert within_l+between_l ≈ popindc.theil_l  "within_l=$(within_l) between_l=$(between_l) ≈ popindc.theil_l=$(popindc.theil_l) "   
+    @assert within_t+between_t ≈ popindc.theil_t "within_t=$(within_t) between_t=$(between_t) ≈ popindc.theil_t=$(popindc.theil_t) "    
+    ( between_l = between_l, within_l = within_l,  between_t = between_t, within_t = within_t)
 end
 
 """
@@ -433,11 +444,11 @@ Also in the dict are:
 
 """
 function make_inequality(
-    rawdata                    :: Array{<:Real, 2 },
+    rawdata                    :: Matrix,
     weightpos                  :: Integer = 1,
     incomepos                  :: Integer = 2,
-    atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
+    atkinson_es                :: Vector{<:AbstractFloat} = DEFAULT_ATKINSON_ES,
+    generalised_entropy_alphas :: Vector{<:AbstractFloat} = DEFAULT_ENTROPIES ) :: InequalityMeasures
     data = make_augmented( rawdata, weightpos, incomepos )
     return make_inequalityinternal(
         data = data,
@@ -454,8 +465,8 @@ function make_inequality(
     rawdata,
     weightcol                  :: Symbol,
     incomecol                  :: Symbol,
-    atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
+    atkinson_es                :: Vector{<:AbstractFloat} = DEFAULT_ATKINSON_ES,
+    generalised_entropy_alphas :: Vector{<:AbstractFloat} = DEFAULT_ENTROPIES ) :: InequalityMeasures
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
     data = make_augmented( rawdata, weightcol, incomecol )
     return make_inequalityinternal(
@@ -475,10 +486,10 @@ e.g. a Gini curve.
 *    3 threshold income level.
 """
 function binify(
-    rawdata   :: Array{<:Real, 2 },
+    rawdata   :: Matrix,
     numbins   :: Integer,
     weightpos :: Integer = 1,
-    incomepos :: Integer = 2 ) :: AbstractArray{<:Real, 2}
+    incomepos :: Integer = 2 ) :: Matrix
     data = make_augmented( rawdata, weightpos, incomepos )
     return binifyinternal( data, numbins )
 end
@@ -490,7 +501,7 @@ function binify(
     rawdata,
     numbins   :: Integer,
     weightcol :: Symbol,
-    incomecol :: Symbol ) :: AbstractArray{<:Real, 2}
+    incomecol :: Symbol ) :: Matrix
     @assert TableTraits.isiterabletable( rawdata ) "data needs to implement IterableTables"
     data = make_augmented( rawdata, weightcol, incomecol )
     return binifyinternal( data, numbins )
@@ -502,6 +513,7 @@ function binifyinternal(
     data      :: Matrix,
     numbins   :: Integer ) :: Matrix
     T = eltype( data )
+    
     nrows = size( data )[1]
     ncols = size( data )[2]
     out = zeros( T, numbins, 3 )
@@ -559,8 +571,8 @@ This is mainly taken from chs 5 and 6 of the World Bank book.
 function make_inequalityinternal(
     ;
     data                       :: Matrix,
-    atkinson_es                :: AbstractArray{<:Real, 1} = DEFAULT_ATKINSON_ES,
-    generalised_entropy_alphas :: AbstractArray{<:Real, 1} = DEFAULT_ENTROPIES ) :: InequalityMeasures
+    atkinson_es                :: Vector = DEFAULT_ATKINSON_ES,
+    generalised_entropy_alphas :: Vector = DEFAULT_ENTROPIES ) :: InequalityMeasures
     nrows = size( data )[1]
     ncols = size( data )[2]
     @assert ncols == 5 "data should have 5 cols but has $ncols"
@@ -575,7 +587,8 @@ function make_inequalityinternal(
         generalised_entropy_alphas, 
         zeros(T,neps),
         z,
-        zeros(T,2),
+        z,
+        z,
         z,
         z,
         z,
@@ -605,8 +618,8 @@ function make_inequalityinternal(
             ln_y_yb :: T = log( y_yb )
             ln_yb_y :: T = log( yb_y )
             iq.hoover += weight*abs( income - y_bar )
-            iq.theil[1] += weight*ln_yb_y
-            iq.theil[2] += weight*y_yb*ln_y_yb
+            iq.theil_l += weight*ln_yb_y
+            iq.theil_t += weight*y_yb*ln_y_yb
             for i in 1:nats
                     es :: T = iq.atkinson_es[i]
                     if es != 1.0
@@ -643,7 +656,8 @@ function make_inequalityinternal(
             iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/y_bar )
         end # e = 1
     end
-    iq.theil ./= total_population
+    iq.theil_l /= total_population
+    iq.theil_t /= total_population
     return iq
 end # make_inequalityinternal
 
