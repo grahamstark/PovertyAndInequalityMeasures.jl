@@ -1,5 +1,6 @@
 module PovertyAndInequalityMeasures
 
+using Base: Real
 using IterableTables
 using IteratorInterfaceExtensions
 using TableTraits
@@ -286,6 +287,17 @@ function make_poverty(
         foster_greer_thorndyke_alphas = foster_greer_thorndyke_alphas )
 end
 
+function calc_positive_inc_popn( data :: Matrix ) :: Real
+    pinc = 0.0
+    nrows = size( data )[1]
+    for r in 1:nrows
+        if data[INCOME] > 0
+            pinc += data[r,WEIGHT]
+        end
+    end
+    return pinc;
+end # postive_inc_population
+
 
 """
 Internal version, once we have our datatset
@@ -316,7 +328,8 @@ function make_povertyinternal(
     ncols = size( data )[2]
     population = data[ nrows, POPN_ACCUM ]
     total_income = data[ nrows, INCOME_ACCUM ]
-
+    positive_inc_popn = calc_positive_inc_popn( data )
+    
     @assert ncols == 5 "data should have 5 cols"
 
     belowline = make_all_below_line( data, line )
@@ -556,7 +569,6 @@ function binifyinternal(
     return out
 end
 
-
 """
 Make a dictionary of inequality measures.
 This is mainly taken from chs 5 and 6 of the World Bank book.
@@ -576,7 +588,6 @@ function make_inequalityinternal(
     nrows = size( data )[1]
     ncols = size( data )[2]
     @assert ncols == 5 "data should have 5 cols but has $ncols"
-    
     T = eltype( generalised_entropy_alphas )
     z = zero(T)
     nats = size( atkinson_es )[1]
@@ -601,6 +612,7 @@ function make_inequalityinternal(
     # initialise atkinsons; 1 for e = 1 0 otherwise
     
     iq.gini = make_gini( data )
+    positive_inc_popn = calc_positive_inc_popn( data )
     total_income = data[nrows,INCOME_ACCUM]
     total_population = data[nrows,POPN_ACCUM]
     y_bar = total_income/total_population
@@ -612,52 +624,59 @@ function make_inequalityinternal(
     for row in 1:nrows
         income = data[row,INCOME]
         weight = data[row,WEIGHT]
+        y_yb  :: T = income/y_bar
+        yb_y  :: T = y_bar/income
+        iq.hoover += weight*abs( income - y_bar )
+        for i in 1:neps
+            alpha :: T = iq.generalised_entropy_alphas[i]
+            iq.generalised_entropy[i] += weight*(y_yb^alpha)
+        end # entropies
+        # atkinson kinda sorta needs
+        # to be over +ives only since otherwise atk(1) = 1 always
+        # since the inner sum goes to 0
         if income > 0.0
-            y_yb  :: T = income/y_bar
-            yb_y  :: T = y_bar/income
             ln_y_yb :: T = log( y_yb )
             ln_yb_y :: T = log( yb_y )
-            iq.hoover += weight*abs( income - y_bar )
             iq.theil_l += weight*ln_yb_y
             iq.theil_t += weight*y_yb*ln_y_yb
             for i in 1:nats
-                    es :: T = iq.atkinson_es[i]
-                    if es != 1.0
-                        iq.atkinson[i] += weight*(y_yb^(1.0-es))
-                    else
-                        iq.atkinson[i] *= (income)^(weight/total_population)
-                    end # e = 1 case
+                es :: T = iq.atkinson_es[i]
+                if es != 1.0
+                    iq.atkinson[i] += weight*(y_yb^(1.0-es))
+                else
+                    iq.atkinson[i] *= (income)^(weight/positive_inc_popn)
+                end # e = 1 case
             end # atkinsons
-            for i in 1:neps
-                alpha :: T = iq.generalised_entropy_alphas[i]
-                iq.generalised_entropy[i] += weight*(y_yb^alpha)
-            end # entropies
         else
-            iq.negative_or_zero_income_count += 1
+            iq.negative_or_zero_income_count += weight
         end # positive income
     end # main loop
+    
+    @assert (iq.negative_or_zero_income_count + positive_inc_popn) ≈ iq.total_population "nzc $(iq.negative_or_zero_income_count) pip $positive_inc_popn tp $(iq.total_population)"
     deciles = binify( data, 10 )
     iq.median = deciles[5,3]
     # top 10/bottom 40
-    iq.palma = (1.0-deciles[9,2])/deciles[4,2]
+    if deciles[4,2] > 0
+        iq.palma = (1.0-deciles[9,2])/deciles[4,2]
+    end
     iq.deciles = deciles
     iq.hoover /= 2.0*total_income
     for i in 1:neps
         alpha :: T = iq.generalised_entropy_alphas[i]
         aq :: T = (1.0/(alpha*(alpha-1.0)))
         iq.generalised_entropy[i] =
-            aq*((iq.generalised_entropy[i]/total_population)-1.0)
+            aq*((iq.generalised_entropy[i]/iq.total_population)-1.0)
     end # entropies
     for i in 1:nats
         es :: T = iq.atkinson_es[i]
         if es != 1.0
-            iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/total_population )^(1.0/(1.0-es))
+            iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/positive_inc_popn)^(1.0/(1.0-es))
         else
             iq.atkinson[i] = 1.0 - ( iq.atkinson[i]/y_bar )
         end # e = 1
     end
-    iq.theil_l /= total_population
-    iq.theil_t /= total_population
+    iq.theil_l /= positive_inc_popn
+    iq.theil_t /= positive_inc_popn
     return iq
 end # make_inequalityinternal
 
