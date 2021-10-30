@@ -64,7 +64,7 @@ mutable struct InequalityMeasures{T<:Real}
     average_income :: T
     total_population :: T
     deciles :: Matrix{T}
-    negative_or_zero_income_count :: Int    
+    negative_or_zero_income_count :: Real
 end
 
 function ineqs_equal( i1 :: InequalityMeasures, i2 :: InequalityMeasures; include_populations :: Bool = true ) :: Bool
