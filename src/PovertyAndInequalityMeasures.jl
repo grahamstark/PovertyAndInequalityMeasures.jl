@@ -291,7 +291,7 @@ function calc_positive_inc_popn( data :: Matrix ) :: Real
     pinc = 0.0
     nrows = size( data )[1]
     for r in 1:nrows
-        if data[INCOME] > 0
+        if data[r,INCOME] > 0
             pinc += data[r,WEIGHT]
         end
     end
