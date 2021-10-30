@@ -627,14 +627,14 @@ function make_inequalityinternal(
         y_yb  :: T = income/y_bar
         yb_y  :: T = y_bar/income
         iq.hoover += weight*abs( income - y_bar )
-        for i in 1:neps
-            alpha :: T = iq.generalised_entropy_alphas[i]
-            iq.generalised_entropy[i] += weight*(y_yb^alpha)
-        end # entropies
         # atkinson kinda sorta needs
         # to be over +ives only since otherwise atk(1) = 1 always
         # since the inner sum goes to 0
         if income > 0.0
+	    for i in 1:neps
+            	alpha :: T = iq.generalised_entropy_alphas[i]
+            	iq.generalised_entropy[i] += weight*(y_yb^alpha)
+            end # entropies
             ln_y_yb :: T = log( y_yb )
             ln_yb_y :: T = log( yb_y )
             iq.theil_l += weight*ln_yb_y
