@@ -12,13 +12,13 @@ TableTraits = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 TableTraitsUtils = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
 
 [compat]
-CSV = ">=0.9"
-DataFrames = ">=1"
-IterableTables = ">=1"
-IteratorInterfaceExtensions = ">=1"
-TableTraits = ">=1"
-TableTraitsUtils = ">=1"
-julia = ">=1"
+CSV = "0.9,1"
+DataFrames = "1"
+IterableTables = "1"
+IteratorInterfaceExtensions = "1"
+TableTraits = "1"
+TableTraitsUtils = "1"
+julia = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
