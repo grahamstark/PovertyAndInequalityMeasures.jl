@@ -22,14 +22,14 @@
 # 
 # dependencies: run these once only
 using Pkg
-Pkg.add( "PovertyAndInequalityMeasures" )
-Pkg.add( "DataFrames" )
-Pkg.add( "CSV" )
-Pkg.add( "Plots" )
-Pkg.add( "PyPlot" )
-Pkg.add( "StatsKit" )
-Pkg.add( "RegressionTables" )
-Pkg.add( "GLM" )
+#Pkg.add( "PovertyAndInequalityMeasures" )
+#Pkg.add( "DataFrames" )
+#Pkg.add( "CSV" )
+#Pkg.add( "Plots" )
+#Pkg.add( "PyPlot" )
+#Pkg.add( "StatsKit" )
+#Pkg.add( "RegressionTables" )
+#Pkg.add( "GLM" )
 
 using StatsKit
 using RegressionTables

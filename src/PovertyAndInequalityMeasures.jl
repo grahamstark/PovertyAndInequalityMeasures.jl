@@ -308,7 +308,9 @@ function make_povertyinternal(
     line                          :: Real,
     growth                        :: Real = 0.0,
     foster_greer_thorndyke_alphas :: Vector = DEFAULT_FGT_ALPHAS ) :: PovertyMeasures
-   
+    
+    @assert line > 0 "Poverty line of $line makes no sense, sorry"
+
     nfgs = size( foster_greer_thorndyke_alphas )[1]
     T = eltype( foster_greer_thorndyke_alphas )
     z = zero(T)
