@@ -531,7 +531,7 @@ function binifyinternal(
     
     nrows = size( data )[1]
     ncols = size( data )[2]
-    out = zeros( T, numbins, 3 )
+    out = zeros( T, numbins, 4 )
     total_population = data[ nrows, POPN_ACCUM ]
     total_income = data[ nrows, INCOME_ACCUM ]
     bin_size :: T = 1.0/numbins
@@ -542,6 +542,8 @@ function binifyinternal(
     incomeaccumlast = 0.0
     incomeaccum = 0.0
     # print( "total_population $total_population total_income $total_income \n")
+    lastincomeaccum = 0.0
+    lastpopnaccum = 0.0
     for row in 1:nrows
         income = data[row,INCOME]
         incomeaccum = data[row,INCOME_ACCUM]/total_income
@@ -551,6 +553,10 @@ function binifyinternal(
             out[bno,1] = popshare
             out[bno,2] = incomeaccum
             out[bno,3] = income
+
+            out[bno,4] = (data[row,INCOME_ACCUM] - lastincomeaccum)/(data[row,POPN_ACCUM] - lastpopnaccum)
+            lastincomeaccum = data[row,INCOME_ACCUM]
+            lastpopnaccum = data[row,POPN_ACCUM] # average in that decile
             # print( "row $row popshare $popshare ≈ thresh $thresh incomeaccum $incomeaccum \n")
             thresh += bin_size
         elseif( popsharelast < thresh ) && ( popshare > thresh)
@@ -562,6 +568,10 @@ function binifyinternal(
             out[bno,1] = ((popshare*p2)+(popsharelast*p1))/pgap
             out[bno,2] = ((incomeaccum*p2)+(incomeaccumlast*p1))/pgap
             out[bno,3] = ((income*p2)+(incomelast*p1))/pgap
+            # 
+            out[bno,4] = (data[row,INCOME_ACCUM]- lastincomeaccum)/(data[row,POPN_ACCUM] - lastpopnaccum)
+            lastincomeaccum = data[row,INCOME_ACCUM]
+            lastpopnaccum = data[row,POPN_ACCUM] # average in that decile
             thresh += bin_size
         end
         popsharelast = popshare

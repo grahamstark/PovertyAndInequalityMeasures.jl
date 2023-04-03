@@ -254,3 +254,18 @@ if isdir(hbai_dir)
 	sco_pov_ahc = make_poverty( scot, pvline_ahc, 0.02, :gs_newpp,:s_oe_ahc )
 	
 end
+
+
+@testset "Decile Tests" begin
+    n = 1000
+    r = rand(n)
+    rs = sort(r)
+    rc = cumsum(rs)
+    d = DataFrame( w=fill(1.0,n), i=r)
+    eq = make_inequality(d,:w,:i )
+    @test rc[100]/100  ≈ eq.deciles[1,4]
+    @test rs[100] ≈ eq.deciles[1,3]
+    @test (rc[1000]-rc[900])/100 ≈ eq.deciles[10,4]
+    @test rs[1000] ≈ eq.deciles[10,3]
+    @test rs[900] ≈ eq.deciles[9,3]
+end
